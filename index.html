@@ -8,11 +8,14 @@
 </head>
 
 <body>
-  <div id="app"></div>
-  <button id="connect">connect</button>
-  <button disabled class="move-button" id="stop">stop</button>
-  <button disabled class="move-button" id="down">down</button>
-  <button disabled class="move-button" id="up">up</button>
+  <div id="app">
+    <button id="connect">🛜 connect</button>
+    ➡️
+    <div id="movement">
+      <button disabled class="move-button" id="down">👆 down</button>
+      <button disabled class="move-button" id="up">👇 up</button>
+    </div>
+  </div>
   <script>
     const serviceUuid = "05794d9b-199e-4c1d-a76b-696dd27ff203";
     const characterisicUuid = "100ecb4d-74ba-4dfe-8590-a4faafc1cc2e";
@@ -38,21 +41,56 @@
           return service.getCharacteristic(characterisicUuid);
         })
         .then(characterisic => {
-          document.getElementById("stop").onclick = () => {
-            characterisic.writeValue(Uint8Array.of(0)).catch(error => { console.error(error); });
-          }
           document.getElementById("down").onclick = () => {
             characterisic.writeValue(Uint8Array.of(1)).catch(error => { console.error(error); });
           }
           document.getElementById("up").onclick = () => {
             characterisic.writeValue(Uint8Array.of(2)).catch(error => { console.error(error); });
           }
+          Array.prototype.map.call(document.getElementsByClassName("move-button"), (button) => {
+            button.disabled = false;
+          })
         })
 
     }
 
     document.getElementById("connect").onclick = connect;
   </script>
+
+  <style>
+    body {
+      margin: 0;
+    }
+
+    #app {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      width: 100svw;
+      height: 100svh;
+    }
+
+    #movement {
+      display: flex;
+      flex-direction: column;
+    }
+
+
+    * {
+      font-family: monospace;
+      font-size: 30px;
+    }
+
+    button {
+      all: unset;
+      border: 1px solid black;
+      margin: 1rem;
+      padding: .3rem;
+    }
+
+    .move-button {}
+  </style>
+
 </body>
 
 </html>
