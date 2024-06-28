@@ -1,3 +1,8 @@
+if (localStorage.getItem('active-eruda') != 'true') {
+    document.write('<scr' + 'ipt src="' + src + '"></scr' + 'ipt>');
+    document.write('<scr' + 'ipt>eruda.init();</scr' + 'ipt>');
+}
+
 const serviceUuid = "05794d9b-199e-4c1d-a76b-696dd27ff203";
 const characterisicUuid = "100ecb4d-74ba-4dfe-8590-a4faafc1cc2e";
 
