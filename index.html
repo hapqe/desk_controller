@@ -138,20 +138,62 @@
     up30Button.disabled = true;
     document.body.appendChild(up30Button);
 
-    let up30Timer = null;
+    let up30Timeout = null;
+    let up30Interval = null;
+    let up30RemainingSeconds = 0;
+
+    function resetUp30ButtonLabel() {
+      up30Button.textContent = '⏫ up in 30 seconds';
+    }
+
+    function updateUp30CountdownLabel() {
+      up30Button.textContent = `⏫ going up in ${up30RemainingSeconds}s`;
+    }
+
+    function stopUp30Early() {
+      if (!deskCharacteristic) {
+        return;
+      }
+      deskCharacteristic.writeValue(Uint8Array.of(0)).catch(error => { console.error(error); });
+      if (up30Timeout) {
+        clearTimeout(up30Timeout);
+        up30Timeout = null;
+      }
+      if (up30Interval) {
+        clearInterval(up30Interval);
+        up30Interval = null;
+      }
+      resetUp30ButtonLabel();
+    }
+
     up30Button.addEventListener('click', () => {
       if (!deskCharacteristic) {
         return;
       }
-      if (up30Timer) {
+      // If already running, stop immediately and reset
+      if (up30Timeout || up30Interval) {
+        stopUp30Early();
         return;
       }
-      up30Button.disabled = true;
+
+      // Start 30s up movement with live countdown
+      up30RemainingSeconds = 30;
+      updateUp30CountdownLabel();
       deskCharacteristic.writeValue(Uint8Array.of(2)).catch(error => { console.error(error); });
-      up30Timer = setTimeout(() => {
+
+      up30Interval = setInterval(() => {
+        up30RemainingSeconds = Math.max(0, up30RemainingSeconds - 1);
+        updateUp30CountdownLabel();
+      }, 1000);
+
+      up30Timeout = setTimeout(() => {
         deskCharacteristic.writeValue(Uint8Array.of(0)).catch(error => { console.error(error); });
-        up30Timer = null;
-        up30Button.disabled = false;
+        if (up30Interval) {
+          clearInterval(up30Interval);
+          up30Interval = null;
+        }
+        up30Timeout = null;
+        resetUp30ButtonLabel();
       }, 30000);
     });
   </script>
