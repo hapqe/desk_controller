@@ -36,7 +36,7 @@
       <button disabled class="move-button" id="down">👇 down</button>
     </div>
   </div>
-  <button id="up30" disabled>⏫ up in 30 seconds</button>
+  <button id="up30" disabled>⏫ up in 30 minutes</button>
   <script>
     let deskCharacteristic = null;
 
@@ -131,9 +131,9 @@
       installButton.remove();
     });
 
-    // Bottom-anchored 30s up button (counts down, then starts up; second click cancels/stops)
+    // Bottom-anchored 30m up button (counts down, then starts up; second click cancels/stops)
     const up30Button = document.getElementById('up30');
-    let countdownTimeout = null, countdownInterval = null, remainingSeconds = 0, isRunning = false;
+    let countdownTimeout = null, countdownInterval = null, moveTimeout = null, remainingMinutes = 0, isRunning = false;
     const setLabel = (s) => { up30Button.textContent = s; };
     const clearTimers = () => {
       if (countdownTimeout) { clearTimeout(countdownTimeout); countdownTimeout = null; }
@@ -145,24 +145,27 @@
       }
       isRunning = false;
       clearTimers();
-      setLabel('⏫ up in 30 seconds');
+      if (moveTimeout) { clearTimeout(moveTimeout); moveTimeout = null; }
+      setLabel('⏫ up in 30 minutes');
     };
     const startAfterCountdown = () => {
       clearTimers();
-      if (!deskCharacteristic) { setLabel('⏫ up in 30 seconds'); return; }
+      if (!deskCharacteristic) { setLabel('⏫ up in 30 minutes'); return; }
       isRunning = true;
       deskCharacteristic.writeValue(Uint8Array.of(2)).catch(console.error);
       setLabel('⏫ going up (tap to stop)');
+      // Auto-stop movement after 12 seconds
+      moveTimeout = setTimeout(() => { stop(); }, 12000);
     };
     up30Button.onclick = () => {
       if (!deskCharacteristic) return;
       if (countdownTimeout || countdownInterval || isRunning) { return stop(); }
-      remainingSeconds = 30; setLabel(`⏫ going up in ${remainingSeconds}s`);
+      remainingMinutes = 30; setLabel(`⏫ going up in ${remainingMinutes}m`);
       countdownInterval = setInterval(() => {
-        remainingSeconds = Math.max(0, remainingSeconds - 1);
-        setLabel(`⏫ going up in ${remainingSeconds}s`);
-      }, 1000);
-      countdownTimeout = setTimeout(startAfterCountdown, 30000);
+        remainingMinutes = Math.max(0, remainingMinutes - 1);
+        setLabel(`⏫ going up in ${remainingMinutes}m`);
+      }, 60000);
+      countdownTimeout = setTimeout(startAfterCountdown, 30 * 60 * 1000);
     };
   </script>
 
