@@ -36,6 +36,7 @@
       <button disabled class="move-button" id="down">👇 down</button>
     </div>
   </div>
+  <button id="up30" disabled>⏫ up in 30 seconds</button>
   <script>
     let deskCharacteristic = null;
 
@@ -130,72 +131,24 @@
       installButton.remove();
     });
 
-    // Bottom-anchored "Go up in 30 seconds" button
-    const up30Button = document.createElement('button');
-    up30Button.id = 'up30';
-    up30Button.textContent = '⏫ up in 30 seconds';
-    up30Button.style.cssText = 'position: fixed; bottom: 0; left: 50%; transform: translateX(-50%); margin: 0.5rem; padding: 0.3rem; border: 1px solid black; font-family: monospace; font-size: 20px; z-index: 1000; background: white;';
-    up30Button.disabled = true;
-    document.body.appendChild(up30Button);
-
-    let up30Timeout = null;
-    let up30Interval = null;
-    let up30RemainingSeconds = 0;
-
-    function resetUp30ButtonLabel() {
-      up30Button.textContent = '⏫ up in 30 seconds';
-    }
-
-    function updateUp30CountdownLabel() {
-      up30Button.textContent = `⏫ going up in ${up30RemainingSeconds}s`;
-    }
-
-    function stopUp30Early() {
-      if (!deskCharacteristic) {
-        return;
-      }
-      deskCharacteristic.writeValue(Uint8Array.of(0)).catch(error => { console.error(error); });
-      if (up30Timeout) {
-        clearTimeout(up30Timeout);
-        up30Timeout = null;
-      }
-      if (up30Interval) {
-        clearInterval(up30Interval);
-        up30Interval = null;
-      }
-      resetUp30ButtonLabel();
-    }
-
-    up30Button.addEventListener('click', () => {
-      if (!deskCharacteristic) {
-        return;
-      }
-      // If already running, stop immediately and reset
-      if (up30Timeout || up30Interval) {
-        stopUp30Early();
-        return;
-      }
-
-      // Start 30s up movement with live countdown
-      up30RemainingSeconds = 30;
-      updateUp30CountdownLabel();
-      deskCharacteristic.writeValue(Uint8Array.of(2)).catch(error => { console.error(error); });
-
-      up30Interval = setInterval(() => {
-        up30RemainingSeconds = Math.max(0, up30RemainingSeconds - 1);
-        updateUp30CountdownLabel();
-      }, 1000);
-
-      up30Timeout = setTimeout(() => {
-        deskCharacteristic.writeValue(Uint8Array.of(0)).catch(error => { console.error(error); });
-        if (up30Interval) {
-          clearInterval(up30Interval);
-          up30Interval = null;
-        }
-        up30Timeout = null;
-        resetUp30ButtonLabel();
-      }, 30000);
-    });
+    // Bottom-anchored 30s up button (inline, short toggle with countdown)
+    const up30Button = document.getElementById('up30');
+    let t = null, i = null, left = 0;
+    const setLabel = s => { up30Button.textContent = s; };
+    const stop = () => {
+      if (deskCharacteristic) deskCharacteristic.writeValue(Uint8Array.of(0)).catch(console.error);
+      if (t) { clearTimeout(t); t = null; }
+      if (i) { clearInterval(i); i = null; }
+      setLabel('⏫ up in 30 seconds');
+    };
+    up30Button.onclick = () => {
+      if (!deskCharacteristic) return;
+      if (t || i) return stop();
+      left = 30; setLabel(`⏫ going up in ${left}s`);
+      deskCharacteristic.writeValue(Uint8Array.of(2)).catch(console.error);
+      i = setInterval(() => { left = Math.max(0, left - 1); setLabel(`⏫ going up in ${left}s`); }, 1000);
+      t = setTimeout(stop, 30000);
+    };
   </script>
 
   <style>
@@ -233,6 +186,19 @@
 
     button * {
       user-select: none;
+    }
+
+    /* Bottom-fixed 30s up button */
+    #up30 {
+      position: fixed;
+      bottom: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      margin: 0.5rem;
+      padding: .3rem;
+      border: 1px solid black;
+      background: white;
+      z-index: 1000;
     }
   </style>
 
