@@ -131,23 +131,38 @@
       installButton.remove();
     });
 
-    // Bottom-anchored 30s up button (inline, short toggle with countdown)
+    // Bottom-anchored 30s up button (counts down, then starts up; second click cancels/stops)
     const up30Button = document.getElementById('up30');
-    let t = null, i = null, left = 0;
-    const setLabel = s => { up30Button.textContent = s; };
+    let countdownTimeout = null, countdownInterval = null, remainingSeconds = 0, isRunning = false;
+    const setLabel = (s) => { up30Button.textContent = s; };
+    const clearTimers = () => {
+      if (countdownTimeout) { clearTimeout(countdownTimeout); countdownTimeout = null; }
+      if (countdownInterval) { clearInterval(countdownInterval); countdownInterval = null; }
+    };
     const stop = () => {
-      if (deskCharacteristic) deskCharacteristic.writeValue(Uint8Array.of(0)).catch(console.error);
-      if (t) { clearTimeout(t); t = null; }
-      if (i) { clearInterval(i); i = null; }
+      if (isRunning && deskCharacteristic) {
+        deskCharacteristic.writeValue(Uint8Array.of(0)).catch(console.error);
+      }
+      isRunning = false;
+      clearTimers();
       setLabel('⏫ up in 30 seconds');
+    };
+    const startAfterCountdown = () => {
+      clearTimers();
+      if (!deskCharacteristic) { setLabel('⏫ up in 30 seconds'); return; }
+      isRunning = true;
+      deskCharacteristic.writeValue(Uint8Array.of(2)).catch(console.error);
+      setLabel('⏫ going up (tap to stop)');
     };
     up30Button.onclick = () => {
       if (!deskCharacteristic) return;
-      if (t || i) return stop();
-      left = 30; setLabel(`⏫ going up in ${left}s`);
-      deskCharacteristic.writeValue(Uint8Array.of(2)).catch(console.error);
-      i = setInterval(() => { left = Math.max(0, left - 1); setLabel(`⏫ going up in ${left}s`); }, 1000);
-      t = setTimeout(stop, 30000);
+      if (countdownTimeout || countdownInterval || isRunning) { return stop(); }
+      remainingSeconds = 30; setLabel(`⏫ going up in ${remainingSeconds}s`);
+      countdownInterval = setInterval(() => {
+        remainingSeconds = Math.max(0, remainingSeconds - 1);
+        setLabel(`⏫ going up in ${remainingSeconds}s`);
+      }, 1000);
+      countdownTimeout = setTimeout(startAfterCountdown, 30000);
     };
   </script>
 
