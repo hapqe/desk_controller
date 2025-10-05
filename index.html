@@ -37,6 +37,8 @@
     </div>
   </div>
   <script>
+    let deskCharacteristic = null;
+
     const serviceUuid = "05794d9b-199e-4c1d-a76b-696dd27ff203";
     const characterisicUuid = "100ecb4d-74ba-4dfe-8590-a4faafc1cc2e";
 
@@ -61,6 +63,7 @@
           return service.getCharacteristic(characterisicUuid);
         })
         .then(characteristic => {
+          deskCharacteristic = characteristic;
           document.getElementById("down").onpointerdown = () => {
             characteristic.writeValue(Uint8Array.of(1)).catch(error => {console.error(error);});
           }
@@ -72,6 +75,10 @@
               characteristic.writeValue(Uint8Array.of(0)).catch(error => {console.error(error);});
             };
           })
+          const up30 = document.getElementById('up30');
+          if (up30) {
+            up30.disabled = false;
+          }
         })
 
     }
@@ -91,16 +98,16 @@
       });
     }
 
-    // PWA Install Prompt
+    // PWA Install Prompt (anchored at top)
     let deferredPrompt;
     const installButton = document.createElement('button');
     installButton.textContent = '📱 Install App';
-    installButton.style.cssText = 'margin: 1rem; padding: 0.3rem; border: 1px solid black; font-family: monospace; font-size: 20px;';
+    installButton.style.cssText = 'position: fixed; top: 0; left: 50%; transform: translateX(-50%); margin: 0.5rem; padding: 0.3rem; border: 1px solid black; font-family: monospace; font-size: 20px; z-index: 1000; background: white;';
     
     window.addEventListener('beforeinstallprompt', (e) => {
       e.preventDefault();
       deferredPrompt = e;
-      document.getElementById('app').appendChild(installButton);
+      document.body.appendChild(installButton);
     });
 
     installButton.addEventListener('click', () => {
@@ -121,6 +128,31 @@
     window.addEventListener('appinstalled', () => {
       console.log('PWA was installed');
       installButton.remove();
+    });
+
+    // Bottom-anchored "Go up in 30 seconds" button
+    const up30Button = document.createElement('button');
+    up30Button.id = 'up30';
+    up30Button.textContent = '⏫ up in 30 seconds';
+    up30Button.style.cssText = 'position: fixed; bottom: 0; left: 50%; transform: translateX(-50%); margin: 0.5rem; padding: 0.3rem; border: 1px solid black; font-family: monospace; font-size: 20px; z-index: 1000; background: white;';
+    up30Button.disabled = true;
+    document.body.appendChild(up30Button);
+
+    let up30Timer = null;
+    up30Button.addEventListener('click', () => {
+      if (!deskCharacteristic) {
+        return;
+      }
+      if (up30Timer) {
+        return;
+      }
+      up30Button.disabled = true;
+      deskCharacteristic.writeValue(Uint8Array.of(2)).catch(error => { console.error(error); });
+      up30Timer = setTimeout(() => {
+        deskCharacteristic.writeValue(Uint8Array.of(0)).catch(error => { console.error(error); });
+        up30Timer = null;
+        up30Button.disabled = false;
+      }, 30000);
     });
   </script>
 
